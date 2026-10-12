@@ -27,9 +27,12 @@ void Set(Values& v, const std::string& key, const std::string& value) {
     const float f = float(std::atof(value.c_str()));
     const int i = std::atoi(value.c_str());
     if (key == "menu_language") {
-        if (value == "en") v.menu_language = MenuLanguage::English;
-        else if (value == "ru") v.menu_language = MenuLanguage::Russian;
-        else std::printf("Settings: unknown menu_language '%s' (expected en or ru)\n", value.c_str());
+        if (value == "en" || value == "ru") {
+            v.menu_language = value == "ru" ? MenuLanguage::Russian : MenuLanguage::English;
+            v.menu_language_chosen = true;
+        } else {
+            std::printf("Settings: unknown menu_language '%s' (expected en or ru)\n", value.c_str());
+        }
     } else if (key == "upscaler") {
         for (int u = 0; u < UpscalerCount; ++u) {
             if (value == UpscalerName(u)) {
@@ -222,7 +225,11 @@ void Save() {
         return std::string(text);
     };
     const auto flag = [](bool value) { return std::string(value ? "1" : "0"); };
-    put("menu_language", v.menu_language == MenuLanguage::Russian ? "ru" : "en");
+    // Not the launcher's or the system's language the menu started with: that one is not a choice,
+    // and once in the file it would stay whatever the launcher's language becomes.
+    if (v.menu_language_chosen) {
+        put("menu_language", v.menu_language == MenuLanguage::Russian ? "ru" : "en");
+    }
     put("upscaler", UpscalerName(v.upscaler));
     put("preset", std::to_string(v.preset.load()));
     put("sharpen", flag(v.sharpen));
